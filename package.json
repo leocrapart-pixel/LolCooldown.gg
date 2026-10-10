@@ -1,0 +1,25 @@
+{
+  "name": "cooldownlol",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "CooldownLol.gg \u2014 League of Legends champion ability cooldowns, ranges and effect radii, per level",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build && node tools/postbuild.mjs",
+    "preview": "vite preview",
+    "scrape": "node tools/scrape.mjs",
+    "check:data": "node tools/check-data.mjs",
+    "check:format": "node tools/check-format.mjs",
+    "check:render": "node tools/check-render.mjs",
+    "check": "npm run check:data && npm run check:format",
+    "serve:static": "node tools/serve-static.mjs"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-static": "^3.0.10",
+    "@sveltejs/kit": "^2.70.3",
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "svelte": "^5.57.2",
+    "vite": "^8.3.4"
+  }
+}
