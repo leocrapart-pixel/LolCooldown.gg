@@ -134,6 +134,29 @@ tools/
 Parsing lives entirely in `tools/lib/extract.js` and presentation entirely in `src/lib`, so a wiki
 markup change is fixed in one file and never touches the UI.
 
+## Deployment
+
+Live at **[lolcooldown-gg.pages.dev](https://lolcooldown-gg.pages.dev)** on Cloudflare Pages, with the
+source at **[github.com/leocrapart-pixel/LolCooldown.gg](https://github.com/leocrapart-pixel/LolCooldown.gg)**.
+
+`build/` is a plain folder of static files, so any static host works. Cloudflare Pages is deployed
+by direct upload:
+
+```bash
+npm run build
+CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... \
+  npx wrangler pages deploy build --project-name=lolcooldown-gg --branch=main
+```
+
+The Pages project is `lolcooldown-gg`, production branch `main`. Deploys are currently **manual**
+(pushing to GitHub does not trigger a build) — connecting the repo for automatic deploys needs a
+GitHub App authorisation through the Cloudflare dashboard, which a scoped API token cannot do.
+
+> Asset paths must stay root-relative (`kit.paths.relative = false`). Champion pages are flat files
+> served at `/Ashe` with no trailing slash, so SvelteKit's default `./_app/...` paths resolve against
+> `/Ashe` and 404 — the site then renders with no CSS and no JavaScript. `check-render.mjs` asserts
+> this by fetching every referenced asset and checking its status and Content-Type.
+
 ## Sharing a champion link, and mis-cased URLs
 
 Canonical URLs use the champion's own casing (`/Ashe`, `/Miss_Fortune`) and every link the site
