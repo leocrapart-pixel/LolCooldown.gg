@@ -95,6 +95,33 @@ has(ashe.html, /src="\/icons\/abilities\//, 'ability icons served locally')
 has(ashe.html, /src="\/icons\/champions\//, 'champion portrait served locally')
 ok(!/src="https?:\/\/wiki\.leagueoflegends\.com\/en-us\/images/.test(ashe.html), 'no hotlinked wiki images')
 
+/**
+ * Asset URLs must be root-relative.
+ *
+ * Champion pages are flat files served at `/Ashe` (no trailing slash), so a
+ * relative `./_app/...` would resolve to `/Ashe/_app/...` and 404 — the page
+ * would render with no CSS and no JavaScript. This is easy to regress by
+ * changing `kit.paths.relative`, so it is asserted against a real HTTP fetch.
+ */
+const assetRefs = [...ashe.html.matchAll(/(?:href|src)="([^"]*\.(?:css|js))"/g)].map((m) => m[1])
+ok(assetRefs.length > 0, 'champion page references CSS/JS assets')
+ok(
+  assetRefs.every((ref) => ref.startsWith('/')),
+  `every asset URL is root-relative (offending: ${assetRefs.filter((r) => !r.startsWith('/')).slice(0, 3).join(', ')})`,
+)
+
+// Every referenced stylesheet and module must actually be served.
+for (const ref of [...new Set(assetRefs)].slice(0, 8)) {
+  const res = await fetch(`${base}${ref}`)
+  ok(res.status === 200, `asset ${ref} is served (got ${res.status})`)
+  const type = res.headers.get('content-type') || ''
+  if (ref.endsWith('.css')) {
+    ok(type.includes('css'), `asset ${ref} is served as CSS (got ${type})`)
+  } else {
+    ok(type.includes('javascript'), `asset ${ref} is served as JavaScript (got ${type})`)
+  }
+}
+
 // Rank pills in description text.
 has(ashe.html, /class="rank-seq is-multi"/, 'rank progressions are marked up as pills')
 

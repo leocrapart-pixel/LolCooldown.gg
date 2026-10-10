@@ -9,6 +9,13 @@ import { vitePreprocess } from '@sveltejs/vite-plugin-svelte'
 const config = {
   preprocess: vitePreprocess(),
   kit: {
+    // Champion pages are written as flat files (`build/Ashe.html`) and served at
+    // `/Ashe` with no trailing slash. SvelteKit's default relative asset paths
+    // (`./_app/...`) resolve against `/Ashe`, which is a file and not a
+    // directory, so the browser would request `/Ashe/_app/...` and get a 404 —
+    // leaving the live site with no CSS and no JavaScript. Root-relative paths
+    // avoid that, and are correct for hosting at a domain root.
+    paths: { relative: false },
     adapter: adapter({
       pages: 'build',
       assets: 'build',
