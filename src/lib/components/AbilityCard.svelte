@@ -5,15 +5,14 @@
    */
   import Description from './Description.svelte'
   import StatValue from './StatValue.svelte'
-  import { hasApexStats, apexStats, extraStats } from '../ability.js'
+  import { apexStats } from '../ability.js'
 
   let { ability, open = false, groupName = null } = $props()
 
   // Local UI state, seeded from the (optional) externally controlled value.
   let expanded = $state(open)
 
-  const apex = $derived(hasApexStats(ability) ? apexStats(ability) : [])
-  const extras = $derived(extraStats(ability))
+  const apex = $derived(apexStats(ability))
   const hasDropdown = $derived(ability.description.length > 0 || ability.leveling.length > 0)
 
   const slotLabel = $derived(ability.slot === 'P' ? 'Passive' : ability.slot ? `Ability ${ability.slot}` : 'Ability')
@@ -50,13 +49,10 @@
     </div>
   </header>
 
-  {#if apex.length || extras.length}
+  {#if apex.length}
     <div class="stats">
       {#each apex as stat (stat.key)}
         <StatValue label={stat.label} stat={stat.stat} tone={stat.tone} showRanks />
-      {/each}
-      {#each extras as stat (stat.key)}
-        <StatValue label={stat.label} stat={stat.stat} tone="default" />
       {/each}
     </div>
   {/if}

@@ -74,6 +74,32 @@ has(ashe.html, 'Physical Damage', 'Volley leveling row: Physical Damage')
 has(ashe.html, 'Bonus Attack Speed', "Ranger's Focus leveling row: Bonus Attack Speed")
 has(ashe.html, 'Magic Damage', 'Enchanted Crystal Arrow leveling row: Magic Damage')
 
+/* ------------------------------------------------- only the three stats --- */
+
+/**
+ * The page shows exactly cooldown, effect radius and range. Everything else the
+ * wiki lists for an ability (cost, cast time, speed, width, angle, recharge, ...)
+ * and all champion base statistics must not appear as a labelled stat.
+ */
+const statLabels = [...ashe.html.matchAll(/class="stat-label[^"]*"[^>]*>([^<]*)</g)].map((m) =>
+  m[1].trim(),
+)
+ok(statLabels.length > 0, 'Ashe page renders stat labels')
+const allowed = new Set(['Cooldown', 'Effect radius', 'Range'])
+const unexpected = [...new Set(statLabels)].filter((l) => !allowed.has(l))
+ok(
+  unexpected.length === 0,
+  `no stat labels beyond cooldown/radius/range (found: ${unexpected.join(', ')})`,
+)
+for (const wanted of allowed) {
+  has(ashe.html, wanted, `Ashe page shows the ${wanted} stat`)
+}
+
+ok(!/section class="base/.test(ashe.html), 'no champion base-statistics panel')
+for (const banned of ['Base statistics', 'Move speed', 'Magic resist', 'Cast time']) {
+  ok(!ashe.html.includes(`>${banned}<`), `champion page does not label "${banned}"`)
+}
+
 // Descriptions must be in the served HTML (hidden, not absent).
 has(ashe.html, 'Show description', 'description toggles are present')
 has(ashe.html, /class="disclosure-body[^"]*"[^>]*hidden/, 'description bodies are collapsed with hidden')

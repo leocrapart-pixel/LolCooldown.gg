@@ -7,7 +7,7 @@
  * are pure and the failure modes that matter (mangling rank numbers, breaking
  * HTML tags) are all visible from the strings.
  */
-import { statParts, markRankNumbers, formatStatLabel, formatDate } from '../src/lib/format.js'
+import { statParts, markRankNumbers, formatDate } from '../src/lib/format.js'
 
 let checks = 0
 const failures = []
@@ -115,13 +115,6 @@ eq(
 const acrossTags = markRankNumbers('<span>60</span> / <span>95</span>')
 ok(acrossTags.includes('<span>60</span>'), 'element boundaries preserved (start)')
 ok(acrossTags.includes('<span>95</span>'), 'element boundaries preserved (end)')
-
-/* ------------------------------------------------------ formatStatLabel --- */
-
-eq(formatStatLabel('effect radius'), 'Effect radius', 'known label override')
-eq(formatStatLabel('hp'), 'Health', 'hp override')
-eq(formatStatLabel('target immunity'), 'Target Immunity', 'title-cased fallback for unknown keys')
-eq(formatStatLabel('sub-type(s)'), 'Sub-type', 'awkward key override')
 
 /* ---------------------------------------------------------- formatDate ---- */
 

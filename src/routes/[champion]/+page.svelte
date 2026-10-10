@@ -2,7 +2,6 @@
   import AbilityCard from '$lib/components/AbilityCard.svelte'
   import ChampionSearch from '$lib/components/ChampionSearch.svelte'
   import { championPath } from '$lib/champions.js'
-  import { formatStatLabel } from '$lib/format.js'
 
   let { data } = $props()
 
@@ -10,16 +9,6 @@
   const roster = $derived(data.champions)
   let query = $state('')
   let search = $state(null)
-
-  // Base stats worth surfacing at the top of the page.
-  const HEADLINE = ['hp', 'mp', 'ad', 'ar', 'mr', 'ms', 'attack range', 'resource', 'class']
-  const baseStats = $derived(
-    HEADLINE.filter((key) => champion.baseStats?.[key]).map((key) => ({
-      key,
-      label: formatStatLabel(key),
-      value: champion.baseStats[key],
-    })),
-  )
 
   const abilities = $derived(champion.abilities ?? [])
   const passive = $derived(abilities.filter((a) => a.slot === 'P'))
@@ -86,17 +75,6 @@
         </p>
       </div>
     </header>
-
-    {#if baseStats.length}
-      <section class="base" aria-label="Base statistics">
-        {#each baseStats as stat (stat.key)}
-          <div class="base-item">
-            <span class="base-label">{stat.label}</span>
-            <span class="base-value">{stat.value}</span>
-          </div>
-        {/each}
-      </section>
-    {/if}
 
     <nav class="jump" aria-label="Abilities">
       <button type="button" class="jump-search" onclick={jumpToSearch}>Search another champion</button>
@@ -208,38 +186,6 @@
     font-size: 11.5px;
   }
 
-  .base {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
-    gap: 1px;
-    background: var(--border);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-    margin-bottom: 20px;
-  }
-
-  .base-item {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: 10px 12px;
-    background: rgba(13, 22, 38, 0.94);
-  }
-
-  .base-label {
-    color: var(--text-dim);
-    font-size: 10.5px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-
-  .base-value {
-    font-size: 14px;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-  }
 
   .jump {
     display: flex;

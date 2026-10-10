@@ -3,67 +3,6 @@
  * a DOM and reused by both the search list and the champion page.
  */
 
-const RANK_LABELS = ['1', '2', '3', '4', '5']
-
-/** Stat labels we can phrase better than the wiki's internal key. */
-const LABEL_OVERRIDES = {
-  hp: 'Health',
-  mp: 'Mana',
-  hp5: 'Health regen',
-  mp5: 'Mana regen',
-  ar: 'Armor',
-  ad: 'Attack damage',
-  mr: 'Magic resist',
-  ms: 'Move speed',
-  'crit. dmg': 'Crit damage',
-  'attack range': 'Attack range',
-  'base as': 'Base attack speed',
-  'as ratio': 'Attack speed ratio',
-  'bonus as': 'Bonus attack speed',
-  'missile speed': 'Missile speed',
-  'gameplay radius': 'Gameplay radius',
-  'select. radius': 'Selection radius',
-  'pathing radius': 'Pathing radius',
-  'select. height': 'Selection height',
-  'acq. radius': 'Acquisition radius',
-  'damage dealt': 'Damage dealt',
-  'damage received': 'Damage received',
-  'release date': 'Release date',
-  'last changed': 'Last changed',
-  class: 'Class',
-  'legacy class': 'Legacy class',
-  resource: 'Resource',
-  'range type': 'Range type',
-  'adaptive type': 'Adaptive type',
-  'targeting input': 'Targeting input',
-  affects: 'Affects',
-  type: 'Type',
-  'sub-type(s)': 'Sub-type',
-  'spell shield': 'Spell shield',
-  parries: 'Parries',
-  projectile: 'Projectile',
-  cost: 'Cost',
-  cooldown: 'Cooldown',
-  'static cooldown': 'Cooldown',
-  recharge: 'Recharge',
-  'cast time': 'Cast time',
-  range: 'Range',
-  'target range': 'Target range',
-  'effect radius': 'Effect radius',
-  width: 'Width',
-  angle: 'Angle',
-  speed: 'Speed',
-}
-
-export function formatStatLabel(key) {
-  if (LABEL_OVERRIDES[key]) return LABEL_OVERRIDES[key]
-  return key
-    .split(/[\s.]+/)
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ')
-}
-
 /**
  * Present a stat value the way the wiki does: a list of numbers is split into
  * per-rank pills, anything else (`Global`, `0.25`, `1 Charge`) is shown as-is.
@@ -89,15 +28,6 @@ export function statParts(stat) {
     parts: segments.map((s) => ({ text: s, isNumber: true })),
     multi: segments.length > 1,
   }
-}
-
-/** Does a stat read as a plain single value (no rank progression)? */
-export function isSingleValue(stat) {
-  return Boolean(stat && stat.text) && !stat.range
-}
-
-export function rankLabel(index) {
-  return RANK_LABELS[index] ?? String(index + 1)
 }
 
 /**
@@ -161,16 +91,3 @@ export function formatDate(iso) {
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
-/** Base stats worth putting in a compact panel, in display order. */
-export const PANEL_STATS = [
-  'hp',
-  'mp',
-  'ad',
-  'ar',
-  'mr',
-  'ms',
-  'attack range',
-  'base as',
-  'resource',
-  'class',
-]

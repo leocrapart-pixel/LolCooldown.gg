@@ -1,6 +1,10 @@
 /**
- * Presentation logic for a single ability: which stats are headline numbers,
- * which are supporting detail, and how a compound effect radius is described.
+ * Presentation logic for a single ability.
+ *
+ * Only three stats are surfaced: cooldown, effect radius and range. Everything
+ * else the wiki lists for an ability (cost, cast time, speed, width, angle,
+ * recharge, ...) is deliberately not shown — it is still in the dataset, so
+ * adding a field back is a one-line change here.
  */
 
 const APEX_ORDER = [
@@ -9,7 +13,7 @@ const APEX_ORDER = [
   { key: 'range', label: 'Range', tone: 'range', get: (a) => a.range },
 ]
 
-/** The counts the page is asked to show for every ability, when present. */
+/** The headline stats for an ability, in display order, skipping any it lacks. */
 export function apexStats(ability) {
   const out = []
   for (const def of APEX_ORDER) {
@@ -21,38 +25,4 @@ export function apexStats(ability) {
   return out
 }
 
-/** Stats the wiki lists but that aren't headline numbers (cost, cast time, ...). */
-export function extraStats(ability) {
-  const skip = new Set(['cooldown', 'static cooldown', 'effect radius', 'range', 'target range'])
-  return Object.entries(ability.stats ?? {})
-    .filter(([key]) => !skip.has(key))
-    .map(([key, text]) => ({ key, label: labelFor(key), stat: { text } }))
-}
-
-export function hasApexStats(ability) {
-  return apexStats(ability).length > 0
-}
-
-function labelFor(key) {
-  const overrides = {
-    cost: 'Cost',
-    'cast time': 'Cast time',
-    recharge: 'Recharge',
-    width: 'Width',
-    angle: 'Angle',
-    speed: 'Speed',
-    'target immunity': 'Target immunity',
-    'queue threshold': 'Queue threshold',
-    'thrust cast time': 'Thrust cast time',
-    'whirlwind cast time': 'Whirlwind cast time',
-  }
-  return (
-    overrides[key] ??
-    key
-      .split(/[\s.]+/)
-      .filter(Boolean)
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(' ')
-  )
-}
 
