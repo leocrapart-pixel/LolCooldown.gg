@@ -9,6 +9,7 @@
     "build": "npm run build:web",
     "build:web": "vite build && node tools/postbuild.mjs",
     "build:desktop": "npm run build:web && node tools/neutralino/adapter.js && cd neutralino && neu build --release",
+    "package:desktop": "node tools/neutralino/package.js win_x64",
     "desktop:run": "cd neutralino && neu run",
     "preview": "vite preview",
     "scrape": "node tools/scrape.mjs",

@@ -207,7 +207,52 @@ if (await exists(zipPath)) {
   note('no release zip yet — run "npm run build:desktop" for the Windows artifact')
 }
 
-/* --------------------------------------------- 6. web app preserved ------ */
+/* ------------------------------------ 6. platform release zip (Windows) --- */
+
+/**
+ * The artifact a user actually downloads: one executable plus `resources.neu`.
+ * The all-platform zip `neu build` writes also works, but ships ~14 MB of macOS
+ * and Linux binaries to a Windows user, so the published release is this one.
+ */
+const winZip = join(DIST, `${config.cli?.binaryName}-win_x64.zip`)
+if (await exists(winZip)) {
+  const buf = readFileSync(winZip)
+  const names = listZipEntries(buf)
+  ok(names.length === 2, `Windows zip holds exactly the app (${names.join(', ')})`)
+  ok(
+    names.includes('resources.neu'),
+    'Windows zip contains resources.neu',
+  )
+  const exeName = names.find((n) => n.endsWith('.exe'))
+  ok(Boolean(exeName), `Windows zip contains an .exe (${exeName})`)
+  if (exeName) {
+    const exe = readZipEntry(buf, exeName)
+    const pe = exe.readUInt32LE(0x3c)
+    ok(exe[0] === 0x4d && exe[1] === 0x5a, 'packaged executable has an MZ header')
+    ok(exe.readUInt32LE(pe) === 0x00004550, 'packaged executable has a PE signature')
+    ok(exe.readUInt16LE(pe + 4) === 0x8664, 'packaged executable targets x86-64')
+    ok(exe.readUInt16LE(pe + 0x5c) === 2, 'packaged executable is a GUI app, not a console app')
+  }
+  const neu = readZipEntry(buf, 'resources.neu')
+  ok(neu.includes(Buffer.from('{"files"')), 'resources.neu carries the file manifest')
+  ok(neu.length > 10_000_000, `resources.neu is complete (${(neu.length / 1048576).toFixed(1)} MB)`)
+
+  // The pages must be inside the published bundle, not just in the staging dir.
+  const manifest = readManifest(neu)
+  if (manifest) {
+    const wanted = ['resources/app/index.html', 'resources/app/Ashe/index.html', 'resources/app/Ashe.html']
+    const missing = wanted.filter((w) => !manifest.includes(w))
+    ok(missing.length === 0, `published bundle holds the pages (missing: ${missing.join(', ')})`)
+    ok(
+      manifest.length > 1000,
+      `published bundle holds the whole app (${manifest.length} entries)`,
+    )
+  }
+} else {
+  note('no platform zip yet — run "npm run package:desktop"')
+}
+
+/* --------------------------------------------- 7. web app preserved ------ */
 
 /**
  * The desktop work must not leak into the web app.
@@ -255,6 +300,28 @@ if (await exists(WEB)) {
   ok(!direct, `the adapter does not write to the web build (${direct?.[0] ?? 'none'})`)
   ok(!cpAsDest, `the adapter does not copy into the web build (${cpAsDest?.[0] ?? 'none'})`)
   ok(cpAsSource, 'the adapter consumes the web build only as a copy source')
+}
+
+
+/** Read the file-name list from a `resources.neu` archive (asar-style manifest). */
+function readManifest(buffer) {
+  const start = buffer.indexOf('{"files"')
+  if (start < 0) return null
+  try {
+    const header = JSON.parse(buffer.subarray(start).toString('utf8').slice(0, buffer.length))
+    const out = []
+    const walk = (node, prefix) => {
+      for (const [name, meta] of Object.entries(node)) {
+        const path = `${prefix}${name}`
+        if (meta && meta.files) walk(meta.files, `${path}/`)
+        else out.push(path)
+      }
+    }
+    walk(header.files, '')
+    return out
+  } catch {
+    return null
+  }
 }
 
 /* ----------------------------------------------------------------- done --- */
