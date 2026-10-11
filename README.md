@@ -190,9 +190,16 @@ npm run build:desktop     # web build -> staged resources -> neutralino/dist/coo
 npm run desktop:run       # run it locally (needs GTK/WebKit on Linux, WebView2 on Windows)
 ```
 
-Output: `neutralino/dist/cooldownlol-release.zip` (~17 MB) containing
-`cooldownlol-win_x64.exe` — a 64-bit Windows GUI executable — plus `resources.neu`, the bundle
-holding the whole app offline. Extract the two and run the `.exe`; WebView2 ships with Windows 10/11.
+Published for download: **[CooldownLol.gg v1.0.0 — Windows desktop](https://github.com/leocrapart-pixel/LolCooldown.gg/releases/tag/v1.0.0)**.
+
+`npm run build:desktop` writes `neutralino/dist/cooldownlol-release.zip` (~17 MB) with every
+platform's runtime, and `npm run package:desktop` then narrows that to a per-platform zip containing
+only `cooldownlol.exe` (a 64-bit Windows GUI executable) plus `resources.neu` — the whole app,
+offline — at 9.8 MB instead of 16.6 MB. That smaller zip is the release asset.
+
+To ship a version: `npm run build:desktop && npm run package:desktop`, then upload
+`neutralino/dist/cooldownlol-win_x64.zip` to a GitHub release. Extract it and run the `.exe`;
+WebView2 ships with Windows 11 and current Windows 10.
 
 ### Why a desktop build is not just "reuse `build/`"
 
