@@ -6,16 +6,23 @@
   "description": "CooldownLol.gg \u2014 League of Legends champion ability cooldowns, ranges and effect radii, per level",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build && node tools/postbuild.mjs",
+    "build": "npm run build:web",
+    "build:web": "vite build && node tools/postbuild.mjs",
+    "build:desktop": "npm run build:web && node tools/neutralino/adapter.js && cd neutralino && neu build --release",
+    "desktop:run": "cd neutralino && neu run",
     "preview": "vite preview",
     "scrape": "node tools/scrape.mjs",
     "check:data": "node tools/check-data.mjs",
     "check:format": "node tools/check-format.mjs",
     "check:render": "node tools/check-render.mjs",
-    "check": "npm run check:data && npm run check:format",
-    "serve:static": "node tools/serve-static.mjs"
+    "check:desktop": "node tools/check-desktop.mjs",
+    "check": "npm run check:data && npm run check:format && npm run check:desktop",
+    "serve:static": "node tools/serve-static.mjs",
+    "desktop:update": "cd neutralino && neu update"
   },
   "devDependencies": {
+    "@neutralinojs/lib": "^6.10.0",
+    "@neutralinojs/neu": "^11.8.0",
     "@sveltejs/adapter-static": "^3.0.10",
     "@sveltejs/kit": "^2.70.3",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",

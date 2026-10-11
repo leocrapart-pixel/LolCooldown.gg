@@ -7,7 +7,16 @@
     <link rel="icon" href="%sveltekit.assets%/favicon.svg" />
     %sveltekit.head%
   </head>
-  <body data-sveltekit-preload-data="hover">
+  <!--
+    `data-sveltekit-preload-data="off"` makes SvelteKit leave link clicks alone, so
+    navigation is a normal page load instead of a client-side route change.
+
+    Champion pages are prerendered flat/dir-index HTML, and a route change would
+    make the router probe `/Ashe/__data.json`, which a static host (and
+    Neutralino's local server) answers with 404. A full load always resolves,
+    because every page exists as a real file.
+  -->
+  <body data-sveltekit-preload-data="off" data-sveltekit-reload>
     <div style="display: contents">%sveltekit.body%</div>
   </body>
 </html>

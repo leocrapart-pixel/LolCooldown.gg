@@ -1,7 +1,13 @@
 /**
- * A minimal static host for the built site.
+ * A minimal static host for a built site.
  *
- *   node tools/serve-static.mjs [port]
+ *   node tools/serve-static.mjs [port] [rootDir]
+ *
+ * Defaults to the web build in `build/`. Point it at the staged Neutralino
+ * resource tree to exercise the desktop app's page resolution with the same
+ * tooling:
+ *
+ *   node tools/serve-static.mjs 4190 neutralino/resources/app
  *
  * This exists so the render checks can be run against the same behaviour a real
  * static host provides — crucially, serving `404.html` (with a 404 status) for an
@@ -11,11 +17,17 @@
  */
 import { createServer } from 'node:http'
 import { readFile, stat } from 'node:fs/promises'
-import { join, extname, normalize } from 'node:path'
+import { join, extname, normalize, isAbsolute } from 'node:path'
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', 'build')
+const PROJECT = join(dirname(fileURLToPath(import.meta.url)), '..')
+const rootArg = process.argv[3]
+const ROOT = rootArg
+  ? isAbsolute(rootArg)
+    ? rootArg
+    : join(PROJECT, rootArg)
+  : join(PROJECT, 'build')
 const port = Number(process.argv[2] || 4190)
 
 const TYPES = {

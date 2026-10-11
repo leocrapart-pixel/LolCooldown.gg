@@ -1,8 +1,13 @@
 <script>
   import ChampionSearch from '$lib/components/ChampionSearch.svelte'
   import { formatDate } from '$lib/format.js'
+  import { champions, meta } from '$lib/champions.js'
 
-  let { data } = $props()
+  // Read straight from the bundled dataset rather than through a `load`
+  // function. Those are identical values, and this keeps the route free of a
+  // server data dependency — which matters for the desktop shell, where
+  // SvelteKit's client router would otherwise probe `/__data.json` for every
+  // navigation and get a 404 from Neutralino's local server.
 
   let query = $state('')
 </script>
@@ -21,11 +26,11 @@
   description on hand when you need it.
 </p>
 
-<ChampionSearch bind:query champions={data.champions} autofocus />
+<ChampionSearch bind:query {champions} autofocus />
 
 <p class="provenance">
-  {data.meta.count} champions in the dataset, extracted from the League of Legends Wiki on
-  {formatDate(data.meta.generatedAt)}.
+  {meta.count} champions in the dataset, extracted from the League of Legends Wiki on
+  {formatDate(meta.generatedAt)}.
 </p>
 
 <style>

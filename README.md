@@ -71,6 +71,8 @@ testing against it would never exercise the not-found path.
 | With per-level scaling rows | 705 |
 | Ability icons shipped | 939 |
 | Prerendered pages | 175 (index, 404, and one per champion) |
+| Desktop resource bundle | 42 MB, offline-complete |
+| Windows release zip | ~17 MB |
 
 ## How the data is obtained
 
@@ -115,17 +117,26 @@ src/
       ChampionSearch.svelte   client-side search over the bundled roster
   routes/
     +layout.svelte            header, footer, licence notices
-    +page.svelte              search all champions
+    +page.svelte              search all champions (reads the dataset directly)
     [champion]/+page.js       resolves the URL segment to a champion (404 otherwise)
     [champion]/+page.svelte   the champion view
     +error.svelte             not-found page
+neutralino/
+  neutralino.config.json      generated shell config (window, paths, permissions)
+  resources/appIcon.ico       app icon, bundled into resources.neu
+  resources/app/              staged frontend (generated)
+  bin/                        Neutralino runtimes, all platforms (generated, gitignored)
+  dist/                       packaged app + release zip (generated, gitignored)
 tools/
   lib/html.js                 dependency-free HTML tree parser
   lib/extract.js              wiki page -> structured champion (all parsing rules)
+  lib/zip.js                  minimal ZIP reader, for verifying release artifacts
   scrape.mjs                  roster + per-champion fetch, icon download, caching
   check-data.mjs              integrity checks over the dataset
   check-format.mjs            unit checks for the presentation helpers
-  check-render.mjs            end-to-end checks against the built site
+  check-render.mjs            end-to-end checks against a built site (web or desktop)
+  check-desktop.mjs           packaging checks for the Neutralino app
+  neutralino/adapter.js       restages the web build for Neutralino's resolution rules
   serve-static.mjs            static host with 404.html fallback (for check-render)
   postbuild.mjs               adds a noscript champion list to the 404 fallback
   probe.js                    dev aid: dump one champion's ability DOM
@@ -168,17 +179,72 @@ casing to the canonical URL. Without JavaScript, `tools/postbuild.mjs` injects a
 listing all 173 champions, so the URL is still a useful page rather than a blank one. `<noscript>` is
 used deliberately — browsers never hydrate inside it, so this cannot cause a hydration mismatch.
 
+## Desktop app (Neutralinojs)
+
+The same frontend ships as a Windows desktop app. `/Ashe` is a real page in a native window with no
+browser chrome and no server to run.
+
+```bash
+npm run desktop:update    # once: fetch the Neutralino runtime binaries (~22 MB, gitignored)
+npm run build:desktop     # web build -> staged resources -> neutralino/dist/cooldownlol-release.zip
+npm run desktop:run       # run it locally (needs GTK/WebKit on Linux, WebView2 on Windows)
+```
+
+Output: `neutralino/dist/cooldownlol-release.zip` (~17 MB) containing
+`cooldownlol-win_x64.exe` — a 64-bit Windows GUI executable — plus `resources.neu`, the bundle
+holding the whole app offline. Extract the two and run the `.exe`; WebView2 ships with Windows 10/11.
+
+### Why a desktop build is not just "reuse `build/`"
+
+Neutralino serves the frontend from its own local HTTP server and decides *file or directory* by
+whether the path contains a dot. From `server/router.cpp`:
+
+```cpp
+vector<string> split = helpers::split(path, '.');
+if (split.size() < 2) {                       // no dot -> treat as a directory
+    if (path.back() != '/') path += "/";
+    return getAsset(path + "index.html", ...);
+}
+```
+
+So `/Ashe` resolves to `Ashe/index.html` and **never** finds a flat `Ashe.html` — which is exactly how
+the web build lays out its prerendered pages. `tools/neutralino/adapter.js` therefore restages the
+build: it copies the web output, then mirrors every flat page into directory form (`Ashe.html` →
+`Ashe/index.html`), keeping both shapes so the same output also satisfies a host that prefers the
+other convention.
+
+Two further desktop-specific decisions, both encoded as checks:
+
+- **Navigation is a full page load.** `src/app.html` sets `data-sveltekit-preload-data="off"`, so the
+  client router does not intercept links. A route change would make SvelteKit request
+  `/Ashe/__data.json`, which a static build never emits — verified: it 404s. Every page exists as a
+  real file, so a full load always resolves. The index route also reads the dataset directly instead
+  of through a `load` function, so it has no server data dependency.
+- **Icons and the client library live inside the document root**, because only `documentRoot` is
+  mapped to `/`; a file outside it cannot be fetched by the local server.
+
+The web app is untouched by all of this. The adapter consumes `build/` strictly as a copy *source* —
+asserted by `check-desktop.mjs`, which parses the adapter and fails if `WEB_BUILD` ever appears as a
+write destination — and the shipped web bundle contains no Neutralino markup
+(verified: zero occurrences across all 1,300+ files).
+
+> Asset paths stay root-relative (`kit.paths.relative = false`) for both targets: Neutralino has a
+> real HTTP server, so absolute paths are correct there too.
+
 ## Verification
 
 ```bash
-npm run check                                   # data + format invariants
+npm run check                                   # data + format + desktop invariants
 npm run build                                   # then:
 npm run serve:static                            # serves build/ with 404.html fallback
-npm run check:render -- http://127.0.0.1:4190   # 54 end-to-end assertions
+npm run check:render -- http://127.0.0.1:4190   # 82 end-to-end assertions
+
+npm run serve:static 4190 neutralino/resources/app   # same checks on the desktop tree
 ```
 
-Current totals: **50,764 data checks** across 173 champions / 940 abilities, 25 formatting checks, and
-54 render checks.
+Current totals: **50,764 data checks** across 173 champions / 940 abilities, 21 formatting checks,
+**82 render checks**, and **40 desktop checks**. The render suite passes unchanged against both the
+web build and the staged desktop resource tree.
 
 `check-data.mjs` asserts the properties that must hold for the site to be correct — every champion
 has a passive and Q/W/E/R, every ability has a description, icons resolve to files that exist, and
@@ -187,6 +253,12 @@ lost spaces between inline elements). Exact numbers are deliberately not asserte
 they change every patch; `check-render.mjs` pins the published Ashe values instead, and checks that
 Yasuo's attack-speed-scaled cooldown survives verbatim.
 
+`check-desktop.mjs` verifies the packaging facts that decide whether the app can work at all: that
+all 173 champion URLs resolve to `<slug>/index.html` under Neutralino's resolution rule, that assets
+are root-relative and present, that the window opens on the app with no unnecessary native
+permissions, and — if a release zip exists — that it contains a real PE32+ x86-64 GUI executable and
+a `resources.neu` holding the mirrored pages.
+
 Three real bugs were caught only by running the checks over the full roster rather than a sample:
 variant abilities (Kha'Zix's evolutions, Karma's Mantra forms) were dropped, Hwei's fifteen
 sub-abilities collapsed into a single card, and the wiki's hidden alternate phrasings leaked into
@@ -194,6 +266,12 @@ plain text. Every one of them is now covered by an invariant.
 
 ## Notes and limits
 
+- **The Windows executable has not been run.** This environment has no Windows, no Wine, and no GTK
+  for the Linux runtime, so the packaging is verified by inspecting the artifacts (PE headers,
+  subsystem, archive contents, page resolution) rather than by launching the app. `npm run
+  desktop:run` on a real desktop is the remaining check.
+- The desktop build currently produces all platforms' binaries in the zip because `neu build`
+  bundles every runtime. Pruning to Windows only would mean shipping a narrower `resourcesPath`.
 - Numbers change between patches. The dataset records the patch each page reported, and the wiki
   page remains the authoritative source; every champion page links to it.
 - Variable/scaling values (Yasuo's Steel Tempest cooldown, for instance) are shown verbatim rather

@@ -1,0 +1,49 @@
+{
+  "$schema": "https://raw.githubusercontent.com/neutralinojs/neutralinojs/main/schemas/neutralino.config.schema.json",
+  "applicationId": "gg.cooldownlol.desktop",
+  "version": "1.0.0",
+  "defaultMode": "window",
+  "port": 0,
+  "documentRoot": "/resources/app/",
+  "url": "/",
+  "enableServer": true,
+  "enableNativeAPI": true,
+  "tokenSecurity": "one-time",
+  "logging": {
+    "enabled": true,
+    "writeToLogFile": false
+  },
+  "nativeAllowList": [
+    "app.*",
+    "window.*",
+    "debug.log"
+  ],
+  "modes": {
+    "window": {
+      "title": "CooldownLol.gg",
+      "width": 1280,
+      "height": 860,
+      "minWidth": 720,
+      "minHeight": 520,
+      "center": true,
+      "resizable": true,
+      "icon": "/resources/appIcon.ico",
+      "exitProcessOnClose": true,
+      "enableInspector": false
+    },
+    "browser": {
+      "nativeBlockList": [
+        "filesystem.*",
+        "os.*"
+      ]
+    }
+  },
+  "cli": {
+    "binaryName": "cooldownlol",
+    "resourcesPath": "/resources/",
+    "extensionsPath": "/extensions/",
+    "clientLibrary": "/resources/app/js/neutralino.js",
+    "binaryVersion": null,
+    "clientVersion": null
+  }
+}
