@@ -2,6 +2,25 @@
   import '../app.css'
 
   let { children } = $props()
+
+  /**
+   * `__OFFLINE_NAV__` is injected by vite.config.js and is true in the desktop
+   * build only. It opts out of SvelteKit's client-side routing so every link is a
+   * normal page load: champion pages are prerendered flat files with no
+   * `__data.json` for the router to fetch, and a real navigation always resolves
+   * in the desktop shell.
+   */
+  const offlineNav = typeof __OFFLINE_NAV__ !== 'undefined' && __OFFLINE_NAV__
+
+  /**
+   * SvelteKit reads `data-sveltekit-preload-data` from the anchor (or an
+   * ancestor) when a link is clicked, so setting it on <body> before hydration
+   * completes is enough. `<svelte:body>` cannot carry data attributes, hence the
+   * explicit effect.
+   */
+  $effect(() => {
+    document.body.dataset.sveltekitPreloadData = offlineNav ? 'off' : 'hover'
+  })
 </script>
 
 <div class="shell">

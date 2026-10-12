@@ -12,14 +12,24 @@
     "check:data": "node tools/check-data.mjs",
     "check:format": "node tools/check-format.mjs",
     "check:render": "node tools/check-render.mjs",
-    "check": "npm run check:data && npm run check:format",
-    "serve:static": "node tools/serve-static.mjs"
+    "check": "npm run check:data && npm run check:format && npm run check:desktop",
+    "serve:static": "node tools/serve-static.mjs",
+    "build:desktop": "cross-env TAURI_BUILD=1 vite build && node tools/postbuild.mjs",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "tauri:icon": "tauri icon",
+    "check:desktop": "node tools/check-desktop.mjs"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.10",
     "@sveltejs/kit": "^2.70.3",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "@tauri-apps/cli": "^2.12.2",
+    "cross-env": "^10.1.0",
     "svelte": "^5.57.2",
     "vite": "^8.3.4"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.12.3"
   }
 }

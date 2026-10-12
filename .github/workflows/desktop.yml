@@ -1,0 +1,109 @@
+# Build the Windows desktop app and publish it as a GitHub release.
+#
+# Pushing a version tag (e.g. `v1.0.0`) builds the installer and creates the
+# release. Running it manually from the Actions tab does a build-only run, which
+# is how to check that a change still compiles without publishing anything.
+#
+# The Rust toolchain and the MSVC linker it needs exist on GitHub's windows
+# runners, which is the point of doing this in CI: Tauri cannot be cross-compiled
+# from Linux, and the Windows binary has to be produced on Windows.
+name: desktop
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+# Only the release step needs to write; everything else is read-only.
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      # Fails fast on a broken dataset or a presentation regression, before
+      # spending build minutes on a Windows binary.
+      - name: Data and formatting checks
+        run: npm run check
+
+      - name: Build the web app
+        run: npm run build:web
+
+      - name: Render checks against the built site
+        run: |
+          node tools/serve-static.mjs 4190 &
+          for i in $(seq 1 20); do
+            curl -sf -o /dev/null http://127.0.0.1:4190/ && break
+            sleep 1
+          done
+          node tools/check-render.mjs http://127.0.0.1:4190
+
+  publish:
+    name: windows installer
+    needs: test
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      # Caches the compiled Rust dependencies, which is most of the build time.
+      - name: Cache Rust build
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build and release
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # __VERSION__ is replaced with the version from tauri.conf.json.
+          tagName: v__VERSION__
+          releaseName: 'CooldownLol.gg v__VERSION__ — Windows desktop'
+          releaseBody: |
+            Every League of Legends champion's ability cooldown, effect radius and range, with
+            per-rank values and full descriptions. All 173 champions, fully offline.
+
+            ## Install
+
+            Download the `-setup.exe` below and run it. It installs for the current user only, so
+            no administrator rights are needed, and it is signed with whatever certificate CI has
+            configured (none by default — see the notes on Windows SmartScreen in the README).
+
+            The app needs no network access and no .NET runtime; it renders with the WebView2
+            runtime that ships with Windows 11 and current Windows 10.
+
+            ## Data
+
+            Ability data is extracted from the [League of Legends Wiki](https://wiki.leagueoflegends.com/en-us/List_of_champions)
+            (CC BY-SA 3.0). Numbers change between patches, so the wiki is authoritative for any
+            given patch. CooldownLol.gg is not endorsed by Riot Games.
+
+            Also on the web: https://lolcooldown-gg.pages.dev
+          releaseDraft: true
+          prerelease: false
+          args: --target x86_64-pc-windows-msvc
