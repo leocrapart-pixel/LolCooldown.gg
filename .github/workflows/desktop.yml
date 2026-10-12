@@ -42,14 +42,17 @@ jobs:
       - name: Build the web app
         run: npm run build:web
 
+      # Port 4321, not something like 4190: fetch/undici refuses a list of
+      # "bad ports" outright, and 4190 (Zabbix's default) is one of them, which
+      # fails with a bare "bad port" rather than a connection error.
       - name: Render checks against the built site
         run: |
-          node tools/serve-static.mjs 4190 &
-          for i in $(seq 1 20); do
-            curl -sf -o /dev/null http://127.0.0.1:4190/ && break
+          node tools/serve-static.mjs 4321 &
+          for i in $(seq 1 30); do
+            curl -sf -o /dev/null http://127.0.0.1:4321/ && break
             sleep 1
           done
-          node tools/check-render.mjs http://127.0.0.1:4190
+          node tools/check-render.mjs http://127.0.0.1:4321
 
   publish:
     name: windows installer

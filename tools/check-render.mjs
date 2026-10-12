@@ -2,8 +2,8 @@
  * End-to-end render checks against the built site.
  *
  *   npm run build
- *   npx vite preview --port 4180 &
- *   node tools/check-render.mjs http://127.0.0.1:4180
+ *   node tools/serve-static.mjs 4321 &
+ *   node tools/check-render.mjs http://127.0.0.1:4321
  *
  * These assert what a reader actually receives: the ability card structure, the
  * headline numbers the site promises (cooldown, effect radius, range), the
@@ -13,7 +13,7 @@
  * The expected values are the ones published on the League of Legends Wiki for
  * Ashe, so this doubles as a check that extraction still matches the source.
  */
-const base = (process.argv[2] || 'http://127.0.0.1:4180').replace(/\/$/, '')
+const base = (process.argv[2] || 'http://127.0.0.1:4321').replace(/\/$/, '')
 
 let checks = 0
 const failures = []
@@ -27,9 +27,28 @@ function has(html, pattern, label) {
   ok(typeof pattern === 'string' ? html.includes(pattern) : pattern.test(html), label)
 }
 
-async function get(path) {
-  const res = await fetch(`${base}${path}`)
-  return { status: res.status, html: await res.text() }
+/**
+ * Fetch with a bounded retry and a legible failure.
+ *
+ * A bare `fetch` here reports only "TypeError: fetch failed", which hid the real
+ * cause the first time this ran in CI (`bad port`, from undici refusing the port
+ * number). Retrying also covers the case where the server is still coming up.
+ */
+async function get(path, attempt = 0) {
+  try {
+    const res = await fetch(`${base}${path}`)
+    return { status: res.status, html: await res.text() }
+  } catch (error) {
+    const cause = error?.cause?.message ?? error?.message ?? String(error)
+    if (attempt < 4) {
+      await new Promise((r) => setTimeout(r, 250 * (attempt + 1)))
+      return get(path, attempt + 1)
+    }
+    throw new Error(
+      `could not fetch ${base}${path} (${cause}). ` +
+        `Is a server serving the build on that address? Note that some port numbers are refused outright by fetch.`,
+    )
+  }
 }
 
 /* ------------------------------------------------------------------ home -- */

@@ -53,7 +53,7 @@ Production build (static output in `build/`):
 ```bash
 npm run build          # vite build, then tools/postbuild.mjs annotates 404.html
 npm run serve:static   # serves build/ the way a static host does, then:
-npm run check:render -- http://127.0.0.1:4190
+node tools/check-render.mjs http://127.0.0.1:4321
 ```
 
 `npm run serve:static` exists because `vite preview` does not serve `404.html` for unknown paths, so
@@ -239,7 +239,7 @@ used deliberately — browsers never hydrate inside it, so this cannot cause a h
 npm run check                                   # data, format and desktop invariants
 npm run build                                   # then:
 npm run serve:static                            # serves build/ with 404.html fallback
-node tools/check-render.mjs http://127.0.0.1:4190
+node tools/check-render.mjs http://127.0.0.1:4321
 ```
 
 Current totals: **50,764 data checks** across 173 champions / 940 abilities, 21 formatting checks,
