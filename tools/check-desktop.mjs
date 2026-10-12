@@ -149,6 +149,33 @@ if (await exists(dist)) {
   note('no build output yet — run "npm run build:desktop"')
 }
 
+/* ------------------------------------------- workflow script coherence --- */
+
+/**
+ * Every `npm run <script>` referenced by a workflow must exist.
+ *
+ * This is not hypothetical: the first CI run failed on `npm run build:web`
+ * because that script had been removed in an earlier rollback while the workflow
+ * still called it. Failing here turns a red CI run into a local check failure.
+ */
+const workflowsDir = join(ROOT, '.github', 'workflows')
+if (await exists(workflowsDir)) {
+  const pkg = JSON.parse(await readFile(join(ROOT, 'package.json'), 'utf8'))
+  const known = new Set(Object.keys(pkg.scripts ?? {}))
+  const referenced = new Set()
+  for (const entry of await readdir(workflowsDir)) {
+    if (!/\.ya?ml$/.test(entry)) continue
+    const body = await readFile(join(workflowsDir, entry), 'utf8')
+    for (const m of body.matchAll(/npm run ([a-zA-Z0-9:_-]+)/g)) referenced.add(m[1])
+  }
+  const unknown = [...referenced].filter((name) => !known.has(name))
+  ok(
+    unknown.length === 0,
+    `workflows only call scripts that exist (unknown: ${unknown.join(', ')})`,
+  )
+  note(`workflows call: ${[...referenced].sort().join(', ')}`)
+}
+
 /* ------------------------------------------------------------------ done -- */
 
 console.log(`${checks} desktop checks run.`)
