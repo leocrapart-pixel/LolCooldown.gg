@@ -8,6 +8,17 @@ Each champion has its own URL (`/Ashe`, `/Yasuo`, `/Miss_Fortune`) so any champi
 shared as a plain link. The whole site is prerendered at build time and needs no server, no API key
 and no runtime network access.
 
+## Downloads
+
+| | |
+| --- | --- |
+| Web | **https://lolcooldown-gg.pages.dev** |
+| Windows desktop | [CooldownLol.gg v1.0.0 installer](https://github.com/leocrapart-pixel/LolCooldown.gg/releases/latest) (7.3 MB, 64-bit, per-user install) |
+| Source | https://github.com/leocrapart-pixel/LolCooldown.gg |
+
+The desktop installer is built by CI on a Windows runner from the tagged commit — see
+[`.github/workflows/desktop.yml`](.github/workflows/desktop.yml).
+
 ## What a champion page shows
 
 For every ability (passive plus Q/W/E/R):
@@ -155,7 +166,8 @@ npm run tauri:build        # Windows installer (needs Rust; on Windows, or CI)
 
 Windows installers are built and published by CI — see
 [`.github/workflows/desktop.yml`](.github/workflows/desktop.yml). Pushing a version tag (`v1.0.0`)
-runs the checks, builds on `windows-latest`, and opens a draft release. Tauri cannot be
+runs the checks, builds on `windows-latest`, and opens a release. The current one is
+[v1.0.0](https://github.com/leocrapart-pixel/LolCooldown.gg/releases/tag/v1.0.0). Tauri cannot be
 cross-compiled from Linux, so the Windows binary has to be produced on Windows; that is the reason
 this lives in CI rather than in a local script.
 
